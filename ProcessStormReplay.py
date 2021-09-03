@@ -1,8 +1,8 @@
 
 import json
 import mpyq
-from heroprotocol import hero_cli
 import argparse
+from heroprotocol import hero_cli
 from heroprotocol.versions import protocol85894 as protocol
 
 
