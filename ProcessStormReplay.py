@@ -59,11 +59,6 @@ line = line[1]	#store replay file name
 contents = archive.read_file('replay.details') 
 details = protocol.decode_replay_details(contents)
 
-a = []
-for i in tracker:
-	a.append(i)
-tracker = a
-
 i=0 #the number of players
 
 while i<10:
@@ -76,6 +71,11 @@ while i<10:
 #Talent
 contents = archive.read_file('replay.tracker.events')
 tracker = protocol.decode_replay_tracker_events(contents)
+
+a = []
+for i in tracker:
+	a.append(i)
+tracker = a
 
 k = 0 #the number of players
 j = 0 #the number of talents
