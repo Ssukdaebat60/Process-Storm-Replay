@@ -25,7 +25,7 @@ example:  python3 ProcessStormReplay "Tomb of the Spider Queen.StormReplay"
 When heroes of the storm is updated, heroprotocol is also updated.
 So you have to change heroprotocol library version every game update.
 
-```bash
+```python
 example:  from heroprotocol.versions import protocol85894 as protocol --> from heroprotocol.versions import protocol90924 as protocol
 ```
 protocol85894, 85894 is version.
