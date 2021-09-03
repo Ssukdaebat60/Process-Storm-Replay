@@ -38,63 +38,70 @@ def th_level(a):
 	elif a == "Tier 7 Choice":
 		return 20
 
-#make team
-def make_team(members):
-	_dict = {"Team1":  members[0:5], "Team2" : members[5:10]}
-	return _dict
+def get_parameter():
+	parser = argparse.ArgumentParser()
+	parser.add_argument('replay_file', help='.StormReplay file to load')
+	args = parser.parse_args()	
+	return args
 
+def get_replay_file(args):
+	replay_file = mpyq.MPQArchive(args.replay_file)
+	return replay_file
 	
+def get_file_name(args):
+	line = str(args)
+	line = line.split("'")
+	file_name = line[1]	#store replay file name
+	return file_name
+
+def read_details(replay_file):
+	contents = replay_file.read_file('replay.details')
+	details = protocol.decode_replay_details(contents)
+	return details
+
+def process_details(replay_file):
+	details = read_details(replay_file)
+	for i in range(0, 10):
+		members[i]["name"] = details["m_playerList"][i]["m_name"].decode('utf-8')
+		members[i]["hero"] = details["m_playerList"][i]["m_hero"].decode('utf-8')
+		members[i]["result"] = details["m_playerList"][i]["m_result"]
+		members[i]["teamid"] = details["m_playerList"][i]["m_teamId"]
+
+def read_trackerevents(replay_file):
+	contents = replay_file.read_file('replay.tracker.events')
+	temp = protocol.decode_replay_tracker_events(contents)
+	trackerevents = []
+	for i in temp:
+		trackerevents.append(i)
+	return trackerevents
+	
+def process_trackerevents(replay_file):
+	trackerevents = read_trackerevents(replay_file)
+	k=0
+	for i in range(0, len(trackerevents)):
+		if "m_eventName" in trackerevents[i].keys():
+				if trackerevents[i]["m_eventName"] == b'EndOfGameTalentChoices':
+					temp = trackerevents[i]["m_stringData"][3:]
+					for j in range(0, len(temp)):
+						level = th_level(temp[j]["m_key"].decode('utf-8'))
+						members[k]["talent"][level] = temp[j]["m_value"].decode('utf-8')
+					k+=1
+
+def make_json(args):
+	dict_replay = {"Team1":  members[0:5], "Team2" : members[5:10]}
+	json_replay = json.dumps(dict_replay, indent=4, ensure_ascii=False)
+	file_name = get_file_name(args)
+	file_name_json = file_name + ".json"
+	f = open(file_name_json, 'w')
+	f.write(json_replay)
+	f.close()
 #############################MAIN##############################
 
-#Nickname, Hero, Gameresult, Gameid
-parser = argparse.ArgumentParser()
-parser.add_argument('replay_file', help='.StormReplay file to load')
-args = parser.parse_args()
-archive = mpyq.MPQArchive(args.replay_file)
+args = get_parameter()
+replay_file = get_replay_file(args)
 
-line = str(args)
-line = line.split("'")
-line = line[1]	#store replay file name
+process_details(replay_file)
+process_trackerevents(replay_file)
 
-contents = archive.read_file('replay.details') 
-details = protocol.decode_replay_details(contents)
-
-i=0 #the number of players
-
-while i<10:
-	members[i]["name"] = details["m_playerList"][i]["m_name"].decode('utf-8')
-	members[i]["hero"] = details["m_playerList"][i]["m_hero"].decode('utf-8')
-	members[i]["result"] = details["m_playerList"][i]["m_result"]
-	members[i]["teamid"] = details["m_playerList"][i]["m_teamId"]
-	i += 1
-
-#Talent
-contents = archive.read_file('replay.tracker.events')
-tracker = protocol.decode_replay_tracker_events(contents)
-
-a = []
-for i in tracker:
-	a.append(i)
-tracker = a
-
-k = 0 #the number of players
-j = 0 #the number of talents
-
-for i in range(0, len(a)):
-	if "m_eventName" in tracker[i].keys():
-		if tracker[i]["m_eventName"] == b'EndOfGameTalentChoices':
-			a = tracker[i]["m_stringData"][3:]
-			for j in range(0, len(a)):
-				level = th_level(a[j]["m_key"].decode('utf-8'))
-				members[k]["talent"][level] = a[j]["m_value"].decode('utf-8')
-			k+=1			
-
-dict_replay = make_team(members) #dict to transform into .json file
-
-filename = line
-json_replay = json.dumps(dict_replay, indent = 4,  ensure_ascii=False)
-filename_json = filename + ".json"
-f = open(filename_json, 'w')
-f.write(json_replay)
-f.close()
+make_json(args)
 
