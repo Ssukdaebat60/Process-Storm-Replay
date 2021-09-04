@@ -18,8 +18,8 @@ p7 = {"name":0, "hero":0, "result":0, "teamid":0, "talent": {1:0, 4:0, 7:0, 10:0
 p8 = {"name":0, "hero":0, "result":0, "teamid":0, "talent": {1:0, 4:0, 7:0, 10:0, 13:0, 16:0, 20:0}}
 p9 = {"name":0, "hero":0, "result":0, "teamid":0, "talent": {1:0, 4:0, 7:0, 10:0, 13:0, 16:0, 20:0}}
 
+global members
 members = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9]
-
 
 #Change nth Tier to level
 def th_level(a):
@@ -87,8 +87,18 @@ def process_trackerevents(replay_file):
 						members[k]["talent"][level] = temp[j]["m_value"].decode('utf-8')
 					k+=1
 
+def make_team():
+	_dict = {"Team1": [], "Team2": []}
+	for i in range(0, len(members)):
+		if members[i]["result"] == 1:
+			_dict["Team1"].append(members[i])
+		else:
+			_dict["Team2"].append(members[i])
+	return _dict
+		
+
 def make_json(args):
-	dict_replay = {"Team1":  members[0:5], "Team2" : members[5:10]}
+	dict_replay = make_team()
 	json_replay = json.dumps(dict_replay, indent=4, ensure_ascii=False)
 	file_name = get_file_name(args)
 	file_name_json = file_name + ".json"
