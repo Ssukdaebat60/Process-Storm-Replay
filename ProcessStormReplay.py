@@ -21,7 +21,7 @@ p9 = {"name":0, "hero":0, "result":0, "teamid":0, "talent": {1:0, 4:0, 7:0, 10:0
 global members
 members = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9]
 
-game_data = {"Map": 0, "GameType": 0, "banned": [], "picked": []}
+game_data = {"map": 0, "gametype": 0, "banned": [], "picked": []}
 
 #Change nth Tier to level
 def th_level(a):
@@ -61,6 +61,34 @@ def read_details(replay_file):
 	details = protocol.decode_replay_details(contents)
 	return details
 
+def read_initdata(replay_file):
+	contents = replay_file.read_file('replay.initData')
+	initdata = protocol.decode_replay_initdata(contents)
+	return initdata
+
+def extract_game_type(replay_file):
+	initdata = read_initdata(replay_file)
+	game_data["gametype"] = custom_true(initdata["m_syncLobbyState"]['m_gameDescription']['m_gameOptions'])
+
+def custom_true(gameoptions):
+	_list = [False, False, True, False, False, False, True, False, False, False, False]
+	list_gameoptions = []
+	list_gameoptions.append(gameoptions['m_advancedSharedControl'])
+	list_gameoptions.append(gameoptions['m_amm'])
+	list_gameoptions.append(gameoptions['m_battleNet'])
+	list_gameoptions.append(gameoptions['m_competitive'])
+	list_gameoptions.append(gameoptions['m_cooperative'])
+	list_gameoptions.append(gameoptions['m_heroDuplicatesAllowed'])
+	list_gameoptions.append(gameoptions['m_lockTeams'])
+	list_gameoptions.append(gameoptions['m_noVictoryOrDefeat'])
+	list_gameoptions.append(gameoptions['m_practice'])
+	list_gameoptions.append(gameoptions['m_randomRaces'])
+	list_gameoptions.append(gameoptions['m_teamsTogether'])
+	if _list == list_gameoptions:
+		return 1
+	else:
+		return 0
+
 def process_details(replay_file):
 	details = read_details(replay_file)
 	for i in range(0, 10):
@@ -69,7 +97,7 @@ def process_details(replay_file):
 		game_data["picked"].append(details["m_playerList"][i]["m_hero"].decode('utf-8'))
 		members[i]["result"] = details["m_playerList"][i]["m_result"]
 		members[i]["teamid"] = details["m_playerList"][i]["m_teamId"]
-	game_data["Map"] = details["m_title"].decode('utf-8')
+	game_data["map"] = details["m_title"].decode('utf-8')
 
 def read_trackerevents(replay_file):
 	contents = replay_file.read_file('replay.tracker.events')
@@ -98,7 +126,7 @@ def extract_banned(replay_file):
 			game_data["banned"].append(trackerevents[i]["m_hero"].decode('utf-8'))
 
 def make_team():
-	_dict = {"Team1": [], "Team2": []}
+	_dict = {"GameData": game_data, "Team1": [], "Team2": []}
 	for i in range(0, len(members)):
 		if members[i]["result"] == 1:
 			_dict["Team1"].append(members[i])
@@ -110,12 +138,9 @@ def make_team():
 def make_json(args):
 	dict_replay = make_team()
 	json_replay = json.dumps(dict_replay, indent=4, ensure_ascii=False)
-	json_replay_game_data = json.dumps(game_data, indent=4, ensure_ascii=False)
 	file_name = get_file_name(args)
 	file_name_json = file_name + ".json"
 	f = open(file_name_json, 'w')
-	f.write(json_replay_game_data)
-	f.write("\n\n")
 	f.write(json_replay)
 	f.close()
 #############################MAIN##############################
@@ -126,6 +151,7 @@ replay_file = get_replay_file(args)
 process_details(replay_file)
 process_trackerevents(replay_file)
 extract_banned(replay_file)
+extract_game_type(replay_file)
 
 make_json(args)
 
